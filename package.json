@@ -1,0 +1,19 @@
+{
+  "name": "fucking-util-signature",
+  "version": "0.0.1",
+  "description": "text signature",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lipingruan/fucking-util-signature.git"
+  },
+  "author": "lipingruan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lipingruan/fucking-util-signature/issues"
+  },
+  "homepage": "https://github.com/lipingruan/fucking-util-signature#readme"
+}
