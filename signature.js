@@ -1,13 +1,9 @@
 'use strict';
 
+const { Erorr, Extend, Type } = require ( './util' );
+
 const md5 = require('./md5');
 const sha256 = require('./sha256');
-
-const Extend = require('./extend');
-
-const Type = require('./type');
-
-const Erorr = require('./erorr');
 
 const signIgnoreArr = ['sign', 'signKey'];
 
