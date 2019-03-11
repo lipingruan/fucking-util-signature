@@ -1,178 +1,261 @@
 'use strict';
 
-const { Erorr, Extend, Type } = require ( './util' );
+const util = require ( './util' );
 
-const md5 = require('./md5');
-const sha256 = require('./sha256');
+const MD5 = require('./lib/md5');
+const SHA256 = require('./lib/sha256');
+const RSA = require ( './lib/rsa' );
 
-const signIgnoreArr = ['sign', 'signKey'];
+module.exports = class Signature {
 
-module.exports = Signature;
+  static get MD5 ( ) { return MD5 }
+  static get SHA256 ( ) { return SHA256 }
+  static get RSA ( ) { return RSA }
 
-function Signature() {}
-
-Signature.verify     = verify;
-Signature.verifyJSON = verifyJSON;
-Signature.sign       = sign;
-Signature.signJSON   = signJSON;
-Signature.md5        = md5;
-Signature.sha256     = sha256;
-
-function signJSON(data, key) {
-
-  let { signType } = data;
-
-  if (signType === 'MD5') {
-
-    return Signature.sign(data, key, md5);
-  } else if (signType === 'SHA256') {
-
-    return Signature.sign(data, key, sha256);
-  } else {
-
-    throw Erorr(`Not Support Sign Type [${signType}]`, '[Signature signJSON]');
-  }
-}
-
-function verifyJSON(data, key) {
-
-  let { signType } = data;
-
-  if (signType === 'MD5') {
-
-    return Signature.verify(data, key, md5);
-  } else if (signType === 'SHA256') {
-
-    return Signature.verify(data, key, sha256);
-  } else  {
-
-    throw Erorr(`Not Support Sign Type [${signType}]`, '[Signature verifyJSON]');
-  }
-}
-
-function verify(source, skey, method) {
-
-  let signInfo = sign(source, skey, method);
-
-  let sourceStr = '';
-
-  if (Type.object(source)) {
-
-    return signInfo.sign === source.sign;
-  } else {
-
-    sourceStr = String(source);
+  constructor ( ) {
+    
+    this.formOptions = {
+      signKey: "",
+      signTypeKey: "",
+      signSaltKey: "",
+      ignoreKeys: [ ],
+      salt: ""
+    };
   }
 
-  return sourceStr === signInfo.urlStr;
-}
+  builder ( instance, options ) {
 
-function sign(source, skey, method) {
+    return new SignatureBuilder ( this, instance, options );
+  }
 
-  if (Type.object(source)) {
+  md5 ( data, output ) {
 
-    let keyValArr = [];
+    return this.builder ( new MD5 ( ), { data, output } );
+  }
 
-    keyValArr = objToUrlKeyValArr(source, signIgnoreArr);
+  sha256 ( data, output ) {
 
-    let signStr = '';
+    return this.builder ( new SHA256 ( ), { data, output } );
+  }
 
-    if (skey) {
+  rsa ( data, output ) {
 
-      signStr = keyValArr.concat(mixKeyVal('signKey', skey)).join('&');
+    return this.builder ( new RSA ( ), { data, output } );
+  }
+
+  sign ( data, output, instance ) {
+  
+    let unsignedString = util.Type.parse.string ( data );
+
+    let sign = instance.sign ( unsignedString, output );
+
+    return sign;
+  }
+
+  verify ( data, signString, output, instance ) {
+
+    return instance.verify ( data, signString, output );
+  }
+  
+  /**
+   * 
+   * @param {any} any
+   * @description
+   * { a: 1, b: 2 }
+   * => a=1&b=2
+   */
+  querystring ( any ) {
+
+    let { ignoreKeys, signSaltKey, salt } = this.formOptions;
+
+    let form = this.json ( any );
+
+    let keyValArray = 
+    util.Str.querys.objToUrlKeyValArr ( form, ignoreKeys );
+
+    if ( util.Type.empty ( salt ) ) { } else {
+
+      keyValArray.push (
+        util.Str.querys.mixKeyVal ( signSaltKey, salt ) )
+    }
+
+    let unsignedString = keyValArray.join ( '&' );
+
+    return unsignedString;
+  }
+
+  json ( any ) {
+
+    if ( util.Type.string ( any ) ) {
+
+      let { ignoreKeys } = this.formOptions;
+
+      let json = util.Str.querys.urlStrToObj ( any, ignoreKeys );
+
+      return json;
     } else {
 
-      signStr = keyValArr.join('&');
-    }
-
-    let signVal = method(signStr);
-
-    let urlStr  = keyValArr.concat(mixKeyVal('sign', signVal)).join('&');
-
-    return {urlStr: urlStr, sign: signVal};
-  } else {
-
-    return signString(String(source), skey);
-  }
-}
-
-function signString(source, skey) {
-
-  /* check urlStr */
-
-  let sourceObj = urlStrToObj(source, signIgnoreArr);
-
-  return sign(sourceObj, skey);
-}
-
-function mixKeyVal(key, val) {
-
-  /* [BUG] JSON.stringify => circle refrence */
-  let _val = Type.object(val) ? JSON.stringify(val) : String(val);
-
-  return [key, encodeURIComponent(_val)].join('=');
-
-  // return [key, _val].join('=');
-}
-
-function splitKeyVal(keyValStr) {
-
-  let keyVal = keyValStr.split('=');
-
-  return [keyVal[0], decodeURIComponent(keyVal[1])];
-
-  // return keyVal;
-}
-
-// object to Url 'key=val' Array
-function objToUrlKeyValArr(source, ignoreArr) {
-
-  let keyValArr = [];
-
-  let keys = Object.keys(source);
-
-  keys.sort(function(k1, k2) { return k1.localeCompare(k2) });
-
-  for (let key of keys) {
-
-    // ignore [sign & signKey]
-
-    if (!ignoreArr || ignoreArr.indexOf(key) === -1) {
-
-      let keyValStr = mixKeyVal(key, source[key]);
-
-      keyValArr.push(keyValStr);
+      return any;
     }
   }
 
-  return keyValArr;
+  signForm ( any, output, instance, options ) {
+
+    util.Extend ( this.formOptions, options );
+
+    let { signKey, signTypeKey } = this.formOptions;
+
+    let form = this.json ( any );
+
+    if ( util.Type.empty ( signTypeKey ) ) { } else {
+
+      form [ signTypeKey ] = instance.type;
+    }
+
+    let unsignedString = this.querystring ( form );
+
+    let sign = instance.sign ( unsignedString, output );
+
+    form [ signKey ] = sign;
+
+    let querystring = util.Str.querys.objToUrlStr ( form );
+
+    return { querystring, form, sign };
+  }
+
+  verifyForm ( any, sign, output, instance, options ) {
+
+    util.Extend ( this.formOptions, options );
+
+    let { signKey } = this.formOptions;
+
+    let form = this.json ( any );
+
+    let unsignedString = this.querystring ( form );
+
+    sign = sign || form [ signKey ];
+
+    return this.verify ( unsignedString, sign, output, instance );
+  }
 }
 
-function urlStrToObj(source, ignoreArr) {
+class SignatureBuilder {
 
-  let keyValArr = source.split('&');
+  constructor ( signature, instance, options={ } ) {
 
-  let sourceObj = {};
+    let { data, output, formOptions } = options;
 
-  for (let keyValStr of keyValArr) {
+    this.options = {
+      output: 'base64',
+      form: false,
+      formOptions: {
+        signKey: 'sign',
+        signTypeKey: 'signType',
+        signSaltKey: 'key',
+        ignoreKeys: [
+          'sign', 'key'
+        ]
+      }
+    };
 
-    let keyVal = splitKeyVal(keyValStr);
+    this.signature = signature;
 
-    let key = keyVal[0],
-        val = keyVal[1];
+    this.instance = instance;
 
-    if (!ignoreArr || ignoreArr.indexOf(key) === -1) {
+    this
+    .data ( data )
+    .output ( output )
+    .formOptions ( formOptions )
+  }
 
-      sourceObj[key] = val;
+  update ( data ) {
+
+    return this.data ( data );
+  }
+
+  data ( data ) {
+
+    this.options.data = data;
+
+    return this;
+  }
+
+  output ( output ) {
+
+    this.options.output = output;
+
+    return this;
+  }
+
+  form ( form=true ) {
+
+    this.options.form = form === true;
+
+    return this;
+  }
+
+  formOptions ( options ) {
+
+    let { formOptions } = this.options;
+
+    this.options.formOptions = util.Extend ( { }, formOptions );
+
+    util.Extend ( this.options.formOptions, options );
+
+    return this;
+  }
+
+  setPublicKey ( key ) {
+
+    if ( util.Type.function ( this.instance.setPublicKey ) ) {
+
+      this.instance.setPublicKey ( key );
+    }
+
+    return this;
+  }
+
+  setPrivateKey ( key ) {
+
+    if ( util.Type.function ( this.instance.setPrivateKey ) ) {
+
+      this.instance.setPrivateKey ( key );
+    }
+
+    return this;
+  }
+
+  digest ( outputArg ) {
+    
+    let { data, form, output, formOptions } = this.options;
+
+    let finalOutput = outputArg || output;
+
+    if ( form === true ) {
+
+      return this.signature.signForm ( 
+        data, finalOutput, this.instance, formOptions );
+    } else {
+
+      return this.signature.sign ( 
+        data, finalOutput, this.instance );
     }
   }
 
-  return sourceObj;
-}
+  verify ( sign, outputArg ) {
 
-function objToUrlStr(source, ignoreArr) {
+    let { data, form, output, formOptions } = this.options;
 
-  let keyValArr = objToUrlKeyValArr(source, ignoreArr);
+    let finalOutput = outputArg || output;
 
-  return keyValArr.join('&');
+    if ( form === true ) {
+
+      return this.signature.verifyForm ( 
+        data, sign, finalOutput, this.instance, formOptions );
+    } else {
+
+      return this.signature.verify ( 
+        data, sign, finalOutput, this.instance );
+    }
+  }
 }
