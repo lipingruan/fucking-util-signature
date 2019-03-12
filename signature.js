@@ -15,10 +15,12 @@ module.exports = class Signature {
   constructor ( ) {
     
     this.formOptions = {
-      signKey: "",
-      signTypeKey: "",
-      signSaltKey: "",
-      ignoreKeys: [ ],
+      signKey: 'sign',
+      signTypeKey: 'signType',
+      signSaltKey: 'key',
+      ignoreKeys: [
+        'sign', 'key'
+      ],
       salt: ""
     };
   }
@@ -137,6 +139,78 @@ module.exports = class Signature {
 
     return this.verify ( unsignedString, sign, output, instance );
   }
+
+  static signJSON ( data, key ) {
+
+    let signature = new this;
+
+    return signature.signJSON ( data, key );
+  }
+
+  static verifyJSON ( data, key ) {
+
+    let signature = new this;
+
+    return signature.verifyJSON ( data, key );
+  }
+
+  /**
+   * 
+   * @param {JSON} data 
+   * @param {String} key 
+   * @deprecated
+   */
+  signJSON ( data, key ) {
+
+    let { signTypeKey } = this.formOptions;
+
+    let signType = data [ signTypeKey ];
+
+    if ( signType === 'MD5' ) {
+
+      return this.md5 ( data ).form ( { salt: key } ).digest ( );
+    } else if ( signType === 'SHA256' ) {
+
+      return this.sha256 ( data ).form ( { salt: key } ).digest ( );
+    } else if ( signType === 'RSA' ) {
+
+      return this.rsa ( data ).form ( { salt: key } ).digest ( );
+    } else {
+
+      let message = 'Not support algorithm: ' + signType;
+
+      throw new Error ( message );
+    }
+  }
+
+  /**
+   * 
+   * @param {JSON} data 
+   * @param {Stirng} key 
+   * @deprecated
+   */
+  verifyJSON ( data, key ) {
+    
+    let { signTypeKey } = this.formOptions;
+
+    let signType = data [ signTypeKey ];
+
+    if ( signType === 'MD5' ) {
+
+      return this.md5 ( data ).form ( { salt: key } ).verify ( );
+    } else if ( signType === 'SHA256' ) {
+
+      return this.sha256 ( data ).form ( { salt: key } ).verify ( );
+    } else if ( signType === 'RSA' ) {
+
+      return this.rsa ( data ).form ( { salt: key } ).verify ( );
+    } else {
+
+      let message = 'Not support algorithm: ' + signType;
+
+      throw new Error ( message );
+    }
+  }
 }
 
 class SignatureBuilder {
@@ -148,14 +222,7 @@ class SignatureBuilder {
     this.options = {
       output: 'base64',
       form: false,
-      formOptions: {
-        signKey: 'sign',
-        signTypeKey: 'signType',
-        signSaltKey: 'key',
-        ignoreKeys: [
-          'sign', 'key'
-        ]
-      }
+      formOptions: { }
     };
 
     this.signature = signature;
@@ -187,9 +254,14 @@ class SignatureBuilder {
     return this;
   }
 
-  form ( form=true ) {
+  form ( any ) {
 
-    this.options.form = form === true;
+    this.options.form = any === true || util.Type.object ( any );
+
+    if ( util.Type.object ( any ) ) {
+
+      this.formOptions ( any );
+    } else { }
 
     return this;
   }
