@@ -25,6 +25,15 @@ module.exports = class Signature {
     };
   }
 
+  copyFormOptions ( formOptions ) {
+
+    let f0 = util.Extend ( { }, this.formOptions );
+
+    let f1 = util.Extend ( f0, formOptions );
+
+    return f1;
+  }
+
   builder ( instance, options ) {
 
     return new SignatureBuilder ( this, instance, options );
@@ -66,11 +75,13 @@ module.exports = class Signature {
    * { a: 1, b: 2 }
    * => a=1&b=2
    */
-  querystring ( any ) {
+  querystring ( any, formOptions ) {
 
-    let { ignoreKeys, signSaltKey, salt } = this.formOptions;
+    formOptions = formOptions || this.formOptions;
 
-    let form = this.json ( any );
+    let { ignoreKeys, signSaltKey, salt } = formOptions;
+
+    let form = this.json ( any, formOptions );
 
     let keyValArray = 
     util.Str.querys.objToUrlKeyValArr ( form, ignoreKeys );
@@ -86,11 +97,13 @@ module.exports = class Signature {
     return unsignedString;
   }
 
-  json ( any ) {
+  json ( any, formOptions ) {
 
     if ( util.Type.string ( any ) ) {
 
-      let { ignoreKeys } = this.formOptions;
+      formOptions = formOptions || this.formOptions;
+
+      let { ignoreKeys } = formOptions;
 
       let json = util.Str.querys.urlStrToObj ( any, ignoreKeys );
 
@@ -103,9 +116,11 @@ module.exports = class Signature {
 
   signForm ( any, output, instance, options ) {
 
-    util.Extend ( this.formOptions, options );
+    let formOptions = !options || options === this.formOptions 
+      ? this.formOptions
+      : this.copyFormOptions ( options );
 
-    let { signKey, signTypeKey } = this.formOptions;
+    let { signKey, signTypeKey } = formOptions;
 
     let form = this.json ( any );
 
@@ -114,7 +129,7 @@ module.exports = class Signature {
       form [ signTypeKey ] = instance.type;
     }
 
-    let unsignedString = this.querystring ( form );
+    let unsignedString = this.querystring ( form, formOptions );
 
     let sign = instance.sign ( unsignedString, output );
 
@@ -127,13 +142,15 @@ module.exports = class Signature {
 
   verifyForm ( any, sign, output, instance, options ) {
 
-    util.Extend ( this.formOptions, options );
+    let formOptions = !options || options === this.formOptions 
+      ? this.formOptions
+      : this.copyFormOptions ( options );
 
-    let { signKey } = this.formOptions;
+    let { signKey } = formOptions;
 
     let form = this.json ( any );
 
-    let unsignedString = this.querystring ( form );
+    let unsignedString = this.querystring ( form, formOptions );
 
     sign = sign || form [ signKey ];
 
