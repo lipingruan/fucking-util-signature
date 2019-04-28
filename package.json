@@ -1,6 +1,6 @@
 {
   "name": "fucking-util-signature",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "text signature",
   "main": "index.js",
   "scripts": {
