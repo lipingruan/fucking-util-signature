@@ -9,6 +9,9 @@
 2. 不使用 `uni-app` 模式开发, 使用此模块
 	- 小程序使用 `fucking-util-signature-uni`
 
+## 常见疑难解答
+- [x] [如何在 Golang 中使用?](https://github.com/lipingruan/fucking-util-signature-all/issues/1)
+
 ## 使用方法
 
 ```javascript
