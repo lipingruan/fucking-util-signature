@@ -1,6 +1,6 @@
 # fucking-util-signature
 
-兼容支持 nodejs/带window的网页环境
+兼容支持 nodejs/h5+/带window的网页环境
 
 模块依赖 **fucking-util** 模块, 请预先安装
 
