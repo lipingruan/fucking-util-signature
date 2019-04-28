@@ -31,24 +31,24 @@ rsa.setPrivateKey ( privateKey );
 let unsigned = 'hello world!';
 
 // 字符串签名
-let sign = rsa.sign ( unsigned, 'base64'/*默认值,可不传*/ );
+let sign = rsa.sign ( unsigned, 'base64'/*buffer|binary|hex*/ );
 
 console.log ( 'sign', sign );
 
 // 签名验证
-let verified = rsa.verify ( unsigned, sign, 'base64'/*default*/ );
+let verified = rsa.verify ( unsigned, sign, 'base64'/*buffer|binary|hex*/ );
 
 console.log ( 'verified', verified );
 
 let unencrypt = 'Unencrypt string';
 
 // 字符串加密
-let encrypted = rsa.encrypt ( unencrypt, 'base64'/*default*/ );
+let encrypted = rsa.encrypt ( unencrypt, 'base64'/*buffer|binary|hex*/ );
 
 console.log ( 'encrypted', encrypted );
 
 // 解密
-let decrypted = rsa.decrypt ( encrypted, 'base64' );
+let decrypted = rsa.decrypt ( encrypted );
 
 console.log ( 'decrypted', decrypted );
 ```
@@ -69,14 +69,14 @@ let unsigned = 'hello world!';
 let sign = rsa
 .update ( unsigned ) // 更新源数据
 .setPrivateKey ( keys.privateKey ) // 设置私钥
-.digest ( 'base64'/*default*/ ); // 生成签名
+.digest ( 'base64' ); // 生成签名
 
 console.log ( 'sign', sign );
 
 let verified = rsa
 .update ( unsigned ) // 更新源数据, 此处可以忽略
 .setPublicKey ( keys.publicKey ) // 设置公钥
-.verify ( sign, 'base64'/*default*/ ); // 验证签名
+.verify ( sign, 'base64' ); // 验证签名
 
 console.log ( 'verified', verified );
 ```
@@ -113,7 +113,7 @@ let { sign, querystring } = signer
 
 console.log ( 'sign', sign );
 
-let verified = sha256.verify ( sign, 'hex' );
+let verified = signer.verify ( sign, 'hex' );
 
 console.log ( 'verified', verified );
 ```
@@ -130,10 +130,15 @@ formOptions.signSaltKey = 'SIGN_SALT';
 formOptions.ignoreKeys = [ 'SIGN', 'SIGN_SALT' ];
 formOptions.salt = "Default salt"; // 默认盐, 可以不设置
 
+let keys = Signature.RSA.generateKeys ( 1024 );
+
 let json = { a:1,b:2 };
 
 let signer = signature.rsa ( )
 .update ( json )
+.setPublicKey ( keys.publicKey )
+.setPrivateKey ( keys.privateKey )
+.form ( true )
 .formOptions ( {
 	salt: "This is salt", // &SIGN_SALT=This%20is%20salt
 } );
@@ -142,7 +147,7 @@ let signer = signature.rsa ( )
 let { sign, querystring } = signer.digest ( 'hex' );
 
 console.log ( 'sign', sign );
-console.log ( 'signed form', form );
+console.log ( 'signed form', json );
 console.log ( 'signed querystring', querystring );
 
 let verified = signer.verify ( sign, 'hex' );
