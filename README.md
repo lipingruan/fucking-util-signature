@@ -11,7 +11,8 @@
 
 ## 常见疑难解答
 - [x] [如何在 Golang 中使用?](https://github.com/lipingruan/fucking-util-signature-all/issues/1)
-- [x] RSA加解密报错? 可使用 `fucking-util-signature-uni` 代替
+- [x] [如何在 Java 中使用?] (https://github.com/lipingruan/fucking-util-signature-all/issues/2)
+- [x] RSA加解密报错? 旧浏览器不支持? 可使用 `fucking-util-signature-uni` 代替, [问题参考](https://ask.dcloud.net.cn/article/35851)
 
 ## 使用方法
 
