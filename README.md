@@ -18,6 +18,18 @@
 - [x] [rsa.keys属性参考(修改后的NodeRSA实例)](https://github.com/rzcoder/node-rsa)
 - [x] [Nvue报错?](https://github.com/lipingruan/fucking-util-signature-all/issues/5)
 
+## 安装
+#### yarn
+```bash
+yarn add fucking-util
+yarn add fucking-util-signature
+```
+#### npm
+```bash
+npm install fucking-util
+npm install fucking-util-signature
+```
+
 ## 使用方法
 
 ```javascript
